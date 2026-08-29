@@ -1,11 +1,39 @@
 #include <iostream>
 #include <filesystem>
+#include <windows.h>
+
 #include "./src/app/processes/ProcessManagement.hpp"
 #include "./src/app/processes/Task.hpp"
 
 namespace fs = std::filesystem;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
+    // =========================
+    // CHILD / WORKER PROCESS
+    // =========================
+
+    if (argc > 1 && std::string(argv[1]) == "--worker")
+    {
+        std::cout << "[Worker] PID: "
+                  << GetCurrentProcessId()
+                  << " started" << std::endl;
+
+        ProcessManagement processManagement(true);
+
+        processManagement.executeTask();
+
+        std::cout << "[Worker] PID: "
+                  << GetCurrentProcessId()
+                  << " exiting" << std::endl;
+
+        return 0;
+    }
+
+    // =========================
+    // PARENT PROCESS
+    // =========================
+
     std::string directory;
     std::string action;
 
@@ -15,32 +43,63 @@ int main(int argc, char* argv[]) {
     std::cout << "Enter the action (encrypt/decrypt): ";
     std::getline(std::cin, action);
 
-    try {
-        if (fs::exists(directory) && fs::is_directory(directory)) {
+    try
+    {
+        if (fs::exists(directory) && fs::is_directory(directory))
+        {
             ProcessManagement processManagement;
 
-            for (const auto& entry : fs::recursive_directory_iterator(directory)) {
-                if (entry.is_regular_file()) {
+            for (const auto& entry :
+                 fs::recursive_directory_iterator(directory))
+            {
+                if (entry.is_regular_file())
+                {
                     std::string filePath = entry.path().string();
+
                     IO io(filePath);
                     std::fstream f_stream = io.getFileStream();
 
-                    if (f_stream.is_open()) {
-                        Action taskAction = (action == "encrypt") ? Action::ENCRYPT : Action::DECRYPT;
-                        auto task = std::make_unique<Task>(std::move(f_stream), taskAction, filePath);
-                        processManagement.submitToQueue(std::move(task));
-                    } else {
-                        std::cout << "Unable to open file: " << filePath << std::endl;
+                    if (f_stream.is_open())
+                    {
+                        Action taskAction =
+                            (action == "encrypt")
+                                ? Action::ENCRYPT
+                                : Action::DECRYPT;
+
+                        auto task = std::make_unique<Task>(
+                            std::move(f_stream),
+                            taskAction,
+                            filePath
+                        );
+
+                        processManagement.submitToQueue(
+                            std::move(task)
+                        );
+                    }
+                    else
+                    {
+                        std::cout
+                            << "Unable to open file: "
+                            << filePath
+                            << std::endl;
                     }
                 }
             }
 
+            // Parent waits for all children
             processManagement.executeTasks();
-        } else {
+        }
+        else
+        {
             std::cout << "Invalid directory path!" << std::endl;
         }
-    } catch (const fs::filesystem_error& ex) {
-        std::cout << "Filesystem error: " << ex.what() << std::endl;
+    }
+    catch (const fs::filesystem_error& ex)
+    {
+        std::cout
+            << "Filesystem error: "
+            << ex.what()
+            << std::endl;
     }
 
     return 0;
