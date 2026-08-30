@@ -3,45 +3,27 @@
 
 #include "Task.hpp"
 
-#include <windows.h>
+#include <queue>
 #include <memory>
+#include <thread>
+#include <mutex>
 #include <vector>
 
 class ProcessManagement
 {
 public:
-    ProcessManagement(bool worker = false);
-    ~ProcessManagement();
+    ProcessManagement();
 
     bool submitToQueue(std::unique_ptr<Task> task);
 
-    // Used by worker process
-    void executeTask();
-
-    // Used by parent process
     void executeTasks();
 
 private:
+    std::queue<std::unique_ptr<Task>> taskQueue;
 
-    struct SharedMemory
-    {
-        LONG size;
-        LONG front;
-        LONG rear;
+    std::mutex queueMutex;
 
-        char tasks[1000][256];
-    };
-
-    SharedMemory* sharedMem;
-
-    HANDLE sharedMemoryHandle;
-    HANDLE itemsSemaphore;
-    HANDLE emptySlotsSemaphore;
-    HANDLE queueMutex;
-
-    bool workerMode;
-
-    std::vector<HANDLE> childProcesses;
+    void worker(int threadId);
 };
 
 #endif
