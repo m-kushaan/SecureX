@@ -1,113 +1,137 @@
-# SecureX — Parallel File Encryption and Decryption
+# SecureX
 
-## Overview
-
-**SecureX** is a C++ application for file encryption and decryption using **process-based parallelism**.
-
-The application recursively scans a given directory, creates a task for each file, and uses a task queue to manage the encryption/decryption operations. On Windows, separate processes are created using the Windows Process API.
+SecureX is a C++ application for **file encryption and decryption**, developed to demonstrate sequential processing, multiprocessing, and multithreading approaches.
 
 ## Features
 
 * File encryption and decryption
-* Recursive directory traversal
-* Task queue-based processing
-* Process-based parallelism
-* Windows child process creation using `CreateProcessA()`
-* Process synchronization using `WaitForSingleObject()`
+* Recursive directory processing
+* Task-based execution using a queue
+* Sequential processing
+* Multiprocessing using Windows child processes
+* Multithreading using `std::thread`
+* Windows-compatible implementation
 
 ## Project Structure
 
 ```text
 SecureX/
-│
+├── main.cpp
 ├── src/
 │   └── app/
-│       ├── encryptDecrypt/
-│       ├── fileHandling/
-│       └── processes/
-│           ├── ProcessManagement.cpp
-│           ├── ProcessManagement.hpp
-│           ├── Task.cpp
-│           └── Task.hpp
+│       ├── processes/
+│       │   ├── ProcessManagement.hpp
+│       │   ├── ProcessManagement.cpp
+│       │   └── Task.hpp
+│       │
+│       └── encryptDecrypt/
+│           └── Cryption.hpp
 │
 ├── test/
-├── .env
-├── .gitignore
+│   ├── test1.txt
+│   └── test2.txt
+│
 ├── Makefile
 ├── README.md
-└── main.cpp
+└── .gitignore
+```
+
+## Processing Implementations
+
+The project was developed in three stages, represented by separate commits.
+
+### 1. `Initial Commit` — Sequential Processing
+
+* Files are converted into tasks.
+* Tasks are stored in a queue.
+* Tasks are processed one at a time.
+* No parallel execution is used.
+
+```text
+Task 1 → Task 2 → Task 3 → Task 4
+```
+
+### 2. `Implement Windows multiprocessing with shared memory` — Multiprocessing
+
+* The parent process creates child processes using Windows `CreateProcess()`.
+* Tasks are stored in shared memory.
+* Each child process retrieves and processes a task independently.
+* The parent waits for all child processes to finish.
+
+```text
+                 Parent Process
+                /      |      \
+           Child 1  Child 2  Child 3
+           Task 1   Task 2   Task 3
+```
+
+### 3. `Implement multithreading for parallel encryption` — Multithreading
+
+* Uses C++ `std::thread`.
+* Multiple worker threads access the shared task queue.
+* A mutex protects queue operations.
+* Encryption/decryption tasks execute concurrently within the same process.
+
+```text
+                  SecureX
+                     |
+            ProcessManagement
+             /       |       \
+        Thread 1  Thread 2  Thread 3
+         Task 1    Task 2    Task 3
 ```
 
 ## How It Works
 
-```text
-Directory
-    ↓
-Recursive File Scan
-    ↓
-Create Tasks
-    ↓
-Task Queue
-    ↓
-ProcessManagement
-    ↓
-CreateProcessA()
-    ↓
-cryption.exe
-    ↓
-Encrypt / Decrypt
+1. The user provides the directory path.
+2. The user selects `encrypt` or `decrypt`.
+3. SecureX recursively scans the directory.
+4. Each file is converted into a `Task`.
+5. Tasks are added to the task queue.
+6. `ProcessManagement` executes the tasks using the selected processing model.
+7. Encryption/decryption is performed on each file.
+
+## How to Run
+
+### Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd SecureX
 ```
-
-For every regular file in the selected directory, a `Task` is created and added to the queue. `ProcessManagement` then executes the tasks using a separate `cryption.exe` process.
-
-## Windows Process Management
-
-The Windows implementation uses:
-
-```cpp
-CreateProcessA()
-WaitForSingleObject()
-CloseHandle()
-```
-
-`CreateProcessA()` creates the child process running `cryption.exe`, while `WaitForSingleObject()` allows the parent process to wait for its completion.
-
-## Build & Run
 
 ### Build
-
-Make sure `g++` and `make` are installed.
 
 ```bash
 make
 ```
 
-This builds:
-
-```text
-encrypt_decrypt.exe
-cryption.exe
-```
-
 ### Run
 
 ```bash
-encrypt_decrypt.exe
+./SecureX
 ```
 
-Enter the directory path and operation:
+Enter the directory and action:
 
 ```text
 Enter the directory path: test
 Enter the action (encrypt/decrypt): encrypt
 ```
 
-Use `decrypt` to perform decryption.
+Use `decrypt` to decrypt the files.
 
-## Technologies
+## Requirements
 
 * C++17
-* C++ Filesystem
-* Windows API
-* Makefile
-* Process-based parallelism
+* Windows
+* MinGW / g++
+* GNU Make
+
+## Parallel Processing Comparison
+
+| Implementation  | Execution                | Synchronization                 |
+| --------------- | ------------------------ | ------------------------------- |
+| Sequential      | One task at a time       | Not required                    |
+| Multiprocessing | Multiple child processes | Shared memory + synchronization |
+| Multithreading  | Multiple threads         | Mutex-protected task queue      |
