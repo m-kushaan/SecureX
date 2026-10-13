@@ -31,36 +31,20 @@ int main()
                     std::string filePath =
                         entry.path().string();
 
-                    IO io(filePath);
+                    Action taskAction =
+                        (action == "encrypt")
+                            ? Action::ENCRYPT
+                            : Action::DECRYPT;
 
-                    std::fstream f_stream =
-                        io.getFileStream();
-
-                    if (f_stream.is_open())
-                    {
-                        Action taskAction =
-                            (action == "encrypt")
-                                ? Action::ENCRYPT
-                                : Action::DECRYPT;
-
-                        auto task =
-                            std::make_unique<Task>(
-                                std::move(f_stream),
-                                taskAction,
-                                filePath
-                            );
-
-                        processManagement.submitToQueue(
-                            std::move(task)
+                    auto task =
+                        std::make_unique<Task>(
+                            taskAction,
+                            filePath
                         );
-                    }
-                    else
-                    {
-                        std::cout
-                            << "Unable to open file: "
-                            << filePath
-                            << std::endl;
-                    }
+
+                    processManagement.submitToQueue(
+                        std::move(task)
+                    );
                 }
             }
 

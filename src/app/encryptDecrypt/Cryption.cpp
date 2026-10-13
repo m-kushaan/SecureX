@@ -13,10 +13,6 @@ int executeCryption(const std::string& taskData) {
     int key = std::stoi(envKey);
     key = ((key % 256) + 256) % 256;
 
-    if (task.f_stream.is_open()) {
-        task.f_stream.close();
-    }
-
     HANDLE fileHandle = CreateFileA(
         task.filePath.c_str(),
         GENERIC_READ | GENERIC_WRITE,
